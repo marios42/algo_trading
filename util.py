@@ -1,3 +1,13 @@
+#
+# util.py
+#
+# Purpose: Contains utility functions for this repo which are used across multiple apps
+#
+# Revision History
+# When      Who         What
+# 20200711  Marios C    Created
+#
+
 import pandas as pd
 import numpy as np
 import yfinance as yf
@@ -25,7 +35,7 @@ def run_baseline(hist_data, trade_df, port_df, trade_size):
     for date_index in range(1, len(hist_data.index)):
         [trade_df, port_df] = base_trades(hist_data, port_df, trade_df, date_index, trade_size)
     port_df["Return"] = port_df["Total"].pct_change(1)
-    sharpe_ratio = port_df["Return"].mean() / port_df["Return"].std() * (252 ** 0.5)
+    sharpe_ratio = (252 ** 0.5) * port_df["Return"].mean() / port_df["Return"].std()
     total = port_df["Total"][port_df.index[-1]]
     return [trade_df, port_df, total, sharpe_ratio]
 
