@@ -116,6 +116,7 @@ if __name__ == '__main__':
     print("Proportion of successful random trades with fixed target: " + str(rand_target_success_prop))
     print("Proportion of successful trades with fixed life: " + str(life_success_prop))
     print("Proportion of successful random trades with fixed life: " + str(rand_life_success_prop))
+
     print("Fixed Life Profit rate: " + str(life_success_prop))
     print("Fixed Life Rate Better than random? " + str(life_success_prop > rand_life_success_prop))
     print("Fixed Target Profit Rate: " + str(target_success_prop))
