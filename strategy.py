@@ -9,22 +9,28 @@
 #
 
 import util
+import os
 
 # Define fee applied upon open to cover trading expenses / cover bid ask spread etc (as % of trade size)
 open_fee = 0
-# Path to save optimised parameters in optimise.py to be called by walkForward.py
+# Path to input and output csv files
 # Note dates must be in format yyyy-mm-dd (excel can sometimes change this if opened manually so be careful)
-param_file = "C:/Users/mario/python/trading/walkForwardParams_Total.csv"
+dir_root = os.getcwd()
+results_file = dir_root + "\\walkForwardResults.csv"
+param_file = dir_root + "\\walkForwardParams.csv"
+trade_file = dir_root + "\\trades.csv"
+port_file = dir_root + "\\portfolio.csv"
 
 
 # Get training parameters for optimise.py
 def get_training_data():
-    train_yrs = 3  # No. yrs used for training
+    train_yrs = 1  # No. yrs used for training
     test_yrs = 1  # No. yrs between re-optimisation of parameters
     to_maximise = "Total"  # Output to optimise, "Total" portfolio value or "Sharpe" sharpe ratio
+
     # parameters to test, array of arrays
     # To test [p0, p1] use [[start p0 from, end p0 at, increment], [start p1 from, end p1 at, increment]]
-    params_range = [[1, 4, 0.5]]
+    params_range = [[3, 4, 0.5], [0.05, 0.15, 0.01]]
     return [train_yrs, test_yrs, params_range, to_maximise]
 
 
@@ -36,10 +42,10 @@ def get_static_data():
     end = "2020-06-25"
     initial_capital = 30000
     trade_size = 1000
-    sample_params = [1]
+    sample_params = [3.5, 0.1]
     indicators = {
         "sma": [200],
-        "ATR": [14]
+        "ATR": [14, 22]
     }
     return [tickers, indicators, start, end, initial_capital, trade_size, sample_params]
 
@@ -56,7 +62,7 @@ def open_trades(port_df, trade_df, hist_data, date, prev_date, trade_size, param
         if hist_data[(sym, "Long_Buy")][prev_date] and open_trades[open_trades.Instrument == sym].empty:
             mkt_open = hist_data[(sym, "Open")][date]
             stop_loss = mkt_open - params[0] * hist_data[(sym, "ATR_14d")][date]
-            profit_target = False
+            profit_target = mkt_open * (1 + params[1])
             fixed_life = False
             [port_df, trade_df] = util.enter_trade(trade_df, port_df, date, sym, mkt_open, stop_loss, profit_target,
                                                    fixed_life, trade_size)
@@ -66,6 +72,8 @@ def open_trades(port_df, trade_df, hist_data, date, prev_date, trade_size, param
 
 # Update stop loss, trade life or profit target in life of trade based on trade history
 def update_targets(row, hist_data, prev_date, params):
+    row.stop_loss = max(row.stop_loss, hist_data[(row.Instrument, "Close")][prev_date]
+                        - params[0] * hist_data[(row.Instrument, "ATR_14d")][prev_date])
     return row
 
 
