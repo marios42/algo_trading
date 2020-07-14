@@ -1,10 +1,21 @@
+#
+# optimise.py
+#
+# Purpose: Optimise the parameters in the strategy and output parameters in csv file for use in walk forward test
+# Uses multiprocessing and brute force to check all solutions and optimises either Total Return or Sharpe Ratio
+#
+#
+# Revision History
+# When      Who         What
+# 20200711  Marios C    Created
+#
+
 from multiprocessing import Queue, Process
 import util
 import strategy as strat
 import itertools
 import numpy as np
 import pandas as pd
-
 
 if __name__ == '__main__':
     queue = Queue()
@@ -13,10 +24,14 @@ if __name__ == '__main__':
 
     params_list = []
     for [param_start, param_end, param_step] in params:
+        print([param_start, param_end, param_step])
         iterator = itertools.count(param_start, param_step)
-        params_list.append(list(next(iterator) for _ in np.arange(1 + (param_end - 1) / param_step)))
+        params_list.append(list(next(iterator) for _ in np.arange(1 + (param_end - param_start) / param_step)))
+
+    print(params_list)
     all_params = list(itertools.product(*params_list))
     cols = ["Test_Start_Date", "Test_End_Date"]
+    print(all_params)
     for param_n in range(len(all_params[0])):
         cols.append("Param_" + str(param_n))
 
@@ -33,7 +48,6 @@ if __name__ == '__main__':
         )
         train_data.columns = train_data.columns.remove_unused_levels()
         train_data = strat.add_signals(train_data)
-        print(all_params)
         for params in all_params:
             print("Testing " + str(params))
             p = Process(target=util.test_params, args=(params, train_data, trade_size, initial_capital, queue))
@@ -49,8 +63,7 @@ if __name__ == '__main__':
                 maxValue = test_out
                 maxParams = params
 
-        print(maxParams)
-        print(maxValue)
+        print("Optimised parameters are: " + str(maxParams) + " with returned " + to_maximise + " of " + maxValue)
         out_params_df = out_params_df.append(
             pd.DataFrame([[train_end, util.add_yrs(train_end, test_yrs)] + list(maxParams)],
                          columns=out_params_df.columns), ignore_index=True)
