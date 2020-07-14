@@ -1,3 +1,17 @@
+#
+# walkForward.py
+#
+# Purpose: Allows a walk forward test where parameters have been pre optimised using optimise.py
+# Test compares results of simulation against holding all possible tickers over simulated period
+# Success criterion: walk forward sharpe ratio > baseline sharpe ratio
+#
+#
+# Revision History
+# When      Who         What
+# 20200711  Marios C    Created
+#
+
+
 import util
 import strategy as strat
 import matplotlib.pyplot as plt
@@ -25,6 +39,7 @@ if __name__ == '__main__':
     all_data = all_data.drop(columns=["Date"], axis=1, level=0)
     all_data.columns = all_data.columns.remove_unused_levels()
     [trade_df, port_df] = util.initialise_dfs(all_data.loc[params_df.loc[0, "Test_Start_Index"]:], initial_capital)
+    [trade_df_1, port_df_1] = util.initialise_dfs(all_data.loc[params_df.loc[0, "Test_Start_Index"]:], initial_capital)
     for index in range(len(params_df.index)):
         test_params = []
         for col in params_df.columns:
@@ -37,8 +52,16 @@ if __name__ == '__main__':
 
     [trade_df_reg, port_df_reg] = util.initialise_dfs(all_data.loc[params_df.loc[0, "Test_Start_Index"]:],
                                                       initial_capital)
+
     [trade_df_reg, port_df_reg, total_reg, sharpe_ratio_reg] = util.run_baseline(
         all_data.loc[params_df.loc[0, "Test_Start_Index"]:], trade_df_reg, port_df_reg, trade_size)
+
     plt.plot((port_df.Total - initial_capital) / initial_capital, color="blue")
     plt.plot((port_df_reg.Total - initial_capital) / initial_capital, color="red")
+
+    test_results = util.get_path_analytics(port_df, "Strategy")
+    test_results = test_results.join(util.get_path_analytics(port_df_reg, "Baseline"))
+    test_results.to_csv(strat.results_file, index=False)
+    trade_df.to_csv(strat.trade_file)
+    port_df.to_csv(strat.port_file)
     plt.show()
