@@ -63,7 +63,7 @@ if __name__ == '__main__':
                 maxValue = test_out
                 maxParams = params
 
-        print("Optimised parameters are: " + str(maxParams) + " with returned " + to_maximise + " of " + maxValue)
+        print("Optimised parameters are: " + str(maxParams) + " with returned " + to_maximise + " of " + str(maxValue))
         out_params_df = out_params_df.append(
             pd.DataFrame([[train_end, util.add_yrs(train_end, test_yrs)] + list(maxParams)],
                          columns=out_params_df.columns), ignore_index=True)
