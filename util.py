@@ -14,6 +14,28 @@ import yfinance as yf
 import strategy as strat
 
 
+def get_path_analytics(portfolio_df, port_name):
+    all_tests = ["Annual_Return", "Annual_Sharpe", "Max_Drawdown", "Return/Max_Drawdown", "Annual_Std"]
+    output_df = pd.DataFrame(columns=[port_name], index=all_tests)
+    ann_return = portfolio_df["Return"].mean() * 252
+    ann_std = (252**0.5) * portfolio_df["Return"].std()
+    max_drawdown = (portfolio_df["Total"] / portfolio_df["High"]).min() - 1.0
+    result_obj = {
+        "Annual_Return": ann_return,
+        "Annual_Std": ann_std,
+        "Max_Drawdown": abs(max_drawdown),
+        "Annual_Sharpe": ann_return / ann_std,
+        "Return/Max_Drawdown": ann_return / abs(max_drawdown)
+    }
+
+    for test in all_tests:
+        if test not in result_obj:
+            print("WARNING - " + test + " not defined in test result object")
+            continue
+        output_df.loc[test, port_name] = result_obj[test]
+    return output_df
+
+
 def test_params(params, all_data, trade_size, initial_capital, queue):
     [trade_df, port_df] = initialise_dfs(all_data, initial_capital)
 
@@ -34,7 +56,7 @@ def run_baseline(hist_data, trade_df, port_df, trade_size):
 
     for date_index in range(1, len(hist_data.index)):
         [trade_df, port_df] = base_trades(hist_data, port_df, trade_df, date_index, trade_size)
-    port_df["Return"] = port_df["Total"].pct_change(1)
+    port_df["Return"] = np.log(1 + port_df["Total"].pct_change(1))
     sharpe_ratio = (252 ** 0.5) * port_df["Return"].mean() / port_df["Return"].std()
     total = port_df["Total"][port_df.index[-1]]
     return [trade_df, port_df, total, sharpe_ratio]
@@ -116,6 +138,10 @@ def add_indicators(df, indicators):
         for arr in indicators["MACD"]:
             add_macd(indicator_df, arr[0], arr[1], arr[2])
             max_rows_used = max(max_rows_used, arr[1])
+
+    # Set default Long_Buy and Long_Sell columns to false
+    for sym in df.columns.levels[0]:
+        df[(sym, "Long_Sell")] = False
 
     # Remove all rows before our indicators are properly set update
     indicator_df = indicator_df.tail(-max_rows_used)
